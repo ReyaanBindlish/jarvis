@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Jarvis</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="island" class="island" data-state="idle">
+      <div id="orb" class="orb" title="Ask Jarvis (Alt+J)">
+        <canvas id="blob" width="240" height="240"></canvas>
+        <div id="pet" class="pet">
+          <div id="face" class="face">
+            <span class="eye"></span>
+            <span class="eye"></span>
+          </div>
+          <span class="zz">z</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div id="status" class="status">Jarvis</div>
+        <div id="heard" class="heard"></div>
+        <div id="answer" class="answer">Press Alt+J and talk, or type below.</div>
+        <form id="form" class="form" autocomplete="off">
+          <input id="input" type="text" maxlength="500" placeholder="Type instead…" spellcheck="false" />
+        </form>
+      </div>
+    </div>
+    <script src="blob.js"></script>
+    <script src="pet.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

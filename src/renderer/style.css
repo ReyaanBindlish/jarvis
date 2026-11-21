@@ -1,0 +1,294 @@
+/* Notch island and pet face adapted from Music Notch by Ritesh Roshan (MIT). */
+:root {
+  color-scheme: dark;
+  --ease: cubic-bezier(0.3, 1.25, 0.4, 1);
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  color: #fff;
+}
+
+/* ---------- the island ---------- */
+.island {
+  --accent: #4aa8ff;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: 170px;
+  height: 36px;
+  background: #000;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    width 0.45s var(--ease),
+    height 0.45s var(--ease),
+    border-radius 0.45s var(--ease);
+}
+.island:not(.open):hover {
+  width: 184px;
+  height: 39px;
+}
+.island.open {
+  width: 500px;
+  height: 180px;
+  border-radius: 0 0 32px 32px;
+  cursor: default;
+}
+.island[data-state="listening"] {
+  --accent: #5fd0ff;
+}
+.island[data-state="thinking"] {
+  --accent: #a98bff;
+}
+.island[data-state="speaking"] {
+  --accent: #6fb4ff;
+}
+.island[data-state="error"] {
+  --accent: #ff6b6b;
+}
+
+/* ---------- the orb: canvas blob with the pet's eyes on top ---------- */
+.orb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62px;
+  height: 62px;
+  translate: -50% -50%;
+  cursor: pointer;
+  transition:
+    left 0.45s var(--ease),
+    top 0.45s var(--ease),
+    width 0.45s var(--ease),
+    height 0.45s var(--ease);
+}
+.island.open .orb {
+  left: 82px;
+  top: 84px;
+  width: 168px;
+  height: 168px;
+}
+.orb canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pet {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.face {
+  --ex: 0px;
+  --ey: 0px;
+  --lid: 1;
+  --near: 0;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  scale: 0.6;
+  translate: var(--ex) var(--ey);
+  transition: scale 0.45s var(--ease);
+}
+.island.open .face {
+  scale: 1.5;
+}
+/* round, glossy bubble eyes; they grow a touch when the cursor comes close */
+.eye {
+  position: relative;
+  width: 10px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 38%, #f2f6ff 70%, #cfe0ff 100%);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.45);
+  transform: scale(calc(1 + var(--near) * 0.18), calc((1 + var(--near) * 0.18) * var(--lid)));
+  transition:
+    width 0.18s,
+    height 0.18s,
+    border-radius 0.18s;
+}
+.eye::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(10, 40, 120, 0.55);
+}
+
+/* happy (hover, a tap): eyes squeeze into soft arcs */
+.island:hover .eye,
+.pet.happy .eye {
+  height: 6px;
+  width: 10px;
+  background: transparent;
+  box-shadow: none;
+  border: 2.4px solid #fff;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+}
+.island:hover .eye::after,
+.pet.happy .eye::after,
+.pet.sleepy .eye::after {
+  opacity: 0;
+}
+
+/* idle for a while: eyes close into gentle downward curves and a z floats away */
+.pet.sleepy .eye {
+  height: 5px;
+  width: 10px;
+  background: transparent;
+  box-shadow: none;
+  border: 2.2px solid rgba(255, 255, 255, 0.85);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+}
+.pet.sleepy .face {
+  animation: doze 4.2s ease-in-out infinite;
+}
+@keyframes doze {
+  50% {
+    translate: 0 1px;
+  }
+}
+.zz {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: -17px 0 0 9px;
+  font-size: 8px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  opacity: 0;
+}
+.pet.sleepy .zz {
+  animation: snooze 2.6s ease-in-out infinite;
+}
+.island:hover .zz {
+  animation: none;
+}
+@keyframes snooze {
+  0% {
+    opacity: 0;
+    transform: translate(0, 4px) scale(0.6);
+  }
+  40% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(6px, -5px) scale(1.1);
+  }
+}
+
+/* thinking: eyes glance up; error: eyes go flat */
+.island[data-state="thinking"] .face {
+  translate: 0 -2px;
+}
+.island[data-state="error"] .eye {
+  height: 4px;
+  border-radius: 3px;
+}
+
+/* ---------- transcript, answer, text box ---------- */
+.panel {
+  position: absolute;
+  left: 172px;
+  right: 22px;
+  top: 16px;
+  bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.island.open .panel {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.3s 0.18s;
+}
+.status {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  transition: color 0.3s;
+}
+.heard {
+  min-height: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.answer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.94);
+  user-select: text;
+}
+.answer::-webkit-scrollbar {
+  width: 4px;
+}
+.answer::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+}
+.form {
+  margin: 0;
+}
+.form input {
+  width: 100%;
+  height: 30px;
+  padding: 0 13px;
+  font: inherit;
+  font-size: 12.5px;
+  color: #fff;
+  background: #121318;
+  border: 1px solid #25272e;
+  border-radius: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form input:focus {
+  border-color: var(--accent);
+}
+.form input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .island,
+  .orb,
+  .face {
+    transition: none;
+  }
+  .pet.sleepy .face,
+  .pet.sleepy .zz {
+    animation: none;
+  }
+}

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jarvis · A mini Siri for your Windows desktop</title>
+<meta name="description" content="Jarvis is a mini Siri for the Windows desktop. Press Alt+J, ask in English, Hindi or Hinglish, and it answers out loud.">
+<meta property="og:title" content="Jarvis: Ask. It answers.">
+<meta property="og:description" content="A mini Siri for the Windows desktop. Voice in, spoken answer out.">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230d1117'/%3E%3Ccircle cx='12' cy='12' r='6' fill='%2338bdf8'/%3E%3Cellipse cx='10' cy='11.6' rx='1' ry='2' fill='%230d1117'/%3E%3Cellipse cx='14' cy='11.6' rx='1' ry='2' fill='%230d1117'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav-wrap">
+  <div class="nav">
+    <a class="logo press" href="#top" aria-label="Jarvis, back to top">
+      <span class="mark" aria-hidden="true"></span>Jarvis
+    </a>
+    <nav class="links" aria-label="Main">
+      <a class="press" href="#how">How it works</a>
+      <a class="press" href="#setup">Setup</a>
+      <a class="press" href="https://github.com/ReyaanBindlish/jarvis">GitHub</a>
+    </nav>
+    <a class="btn btn-md press" href="https://github.com/ReyaanBindlish/jarvis/releases/download/v1.0.0/Jarvis-win.zip">Download</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <span class="hero-ghost" aria-hidden="true">Ask.<br>It answers.</span>
+        <h1 class="hero-h1">
+          <span class="line"><span>Ask.</span></span>
+          <span class="line"><span>It answers.</span></span>
+        </h1>
+      </div>
+      <p class="lede rise" style="--d:.25s">A mini Siri for your Windows desktop. It lives in a small black notch at the top of your screen, listens when you ask, and answers out loud.</p>
+      <div class="actions rise" style="--d:.35s">
+        <a class="btn btn-lg press" href="https://github.com/ReyaanBindlish/jarvis/releases/download/v1.0.0/Jarvis-win.zip">Download for Windows</a>
+        <a class="btn btn-lg btn-ghost press" href="https://github.com/ReyaanBindlish/jarvis">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage-sec" aria-label="The notch">
+    <div class="wrap">
+      <div class="stage reveal">
+        <div class="island" role="img" aria-label="The Jarvis notch: a black island with a glowing blue blob whose eyes follow your cursor">
+          <canvas id="blob" class="blob" aria-hidden="true"></canvas>
+          <div class="island-text" aria-hidden="true">
+            <span class="island-label">You</span>
+            <span class="island-line">What is the weather like today?</span>
+          </div>
+        </div>
+        <div class="stage-ghost" aria-hidden="true">
+          <div class="island">
+            <canvas id="blob-mirror" class="blob"></canvas>
+            <div class="island-text">
+              <span class="island-label">You</span>
+              <span class="island-line">What is the weather like today?</span>
+            </div>
+          </div>
+        </div>
+        <p class="stage-note">It sits at the top of your screen and keeps an eye on your cursor.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ghost-sec" aria-label="Built with">
+    <div class="wrap">
+      <p class="ghost-title reveal">Built with</p>
+      <ul class="ghost-row reveal">
+        <li class="ghost" style="--brand:#d97757"><span class="ghost-mark"><span class="ghost-mono">Cl</span></span><span class="ghost-name">Claude</span><span class="ghost-role">Thinking and web search</span></li>
+        <li class="ghost" style="--brand:#f59e0b"><span class="ghost-mark"><span class="ghost-mono">Om</span></span><span class="ghost-name">Open-Meteo</span><span class="ghost-role">Live weather</span></li>
+        <li class="ghost" style="--brand:#f55036"><span class="ghost-mark"><span class="ghost-mono">Gq</span></span><span class="ghost-name">Groq</span><span class="ghost-role">Hearing you</span></li>
+        <li class="ghost" style="--brand:#0d1117"><span class="ghost-mark"><span class="ghost-mono">11</span></span><span class="ghost-name">ElevenLabs</span><span class="ghost-role">The butler voice</span></li>
+        <li class="ghost" style="--brand:#47848f"><span class="ghost-mark"><span class="ghost-mono">El</span></span><span class="ghost-name">Electron</span><span class="ghost-role">Desktop shell</span></li>
+        <li class="ghost" style="--brand:#0ea5e9"><span class="ghost-mark"><span class="ghost-mono">Mn</span></span><span class="ghost-name">Music Notch</span><span class="ghost-role">Notch and pet face</span></li>
+      </ul>
+      <p class="ghost-legal">Product names belong to their owners.</p>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <h2 class="band-h2 reveal">How it works.</h2>
+      <ol class="steps">
+        <li class="reveal" style="--d:0s">
+          <span class="num">01</span>
+          <h3>Wake it</h3>
+          <p>Press <kbd>Alt</kbd> + <kbd>J</kbd>, or tap the notch.</p>
+        </li>
+        <li class="reveal" style="--d:.08s">
+          <span class="num">02</span>
+          <h3>Speak</h3>
+          <p>Ask in English, Hindi or Hinglish. Say it the way you would say it to a person.</p>
+        </li>
+        <li class="reveal" style="--d:.16s">
+          <span class="num">03</span>
+          <h3>It thinks</h3>
+          <p>Weather comes live from Open-Meteo. Everything else goes to Claude, with web search.</p>
+        </li>
+        <li class="reveal" style="--d:.24s">
+          <span class="num">04</span>
+          <h3>It answers</h3>
+          <p>Aloud, in a British butler voice.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="setup" id="setup">
+    <div class="wrap cols">
+      <div class="reveal">
+        <h2 class="sec-h2">Set up in a minute.</h2>
+        <p class="sec-note">No installer, no account. Bring your own keys.</p>
+        <a class="btn btn-lg press" href="https://github.com/ReyaanBindlish/jarvis/releases/download/v1.0.0/Jarvis-win.zip">Download the zip</a>
+      </div>
+      <div class="reveal" style="--d:.1s">
+        <ol class="todo">
+          <li><span>Download <a href="https://github.com/ReyaanBindlish/jarvis/releases/download/v1.0.0/Jarvis-win.zip">Jarvis-win.zip</a>.</span></li>
+          <li><span>Unzip it anywhere you like.</span></li>
+          <li><span>Run <code>Jarvis.exe</code>. The notch appears at the top of your screen.</span></li>
+          <li><span>Right-click the notch and choose Set keys. This opens <code>%APPDATA%\Jarvis\keys.json</code>.</span></li>
+        </ol>
+<pre class="code" aria-label="keys.json"><code>{
+  "anthropic": "",
+  "groq": "",
+  "deepgram": "",
+  "elevenlabs": "",
+  "voice": "",
+  "model": "",
+  "city": "New Delhi",
+  "name": "sir"
+}</code></pre>
+        <p class="keys-note">Fill in your own keys and save. <code>voice</code> is an ElevenLabs voice id, <code>model</code> a Claude model id (leave it empty for the default), <code>city</code> your home city for weather, and <code>name</code> what Jarvis calls you. Weather works with no keys at all.</p>
+        <p class="keys-note">Your keys never leave your PC. They stay in that one file.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <p class="foot-tag">Ask. It answers.</p>
+      <ul class="foot-links">
+        <li><a href="https://github.com/ReyaanBindlish/jarvis/releases/download/v1.0.0/Jarvis-win.zip">Download</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#setup">Setup</a></li>
+        <li><a href="https://github.com/ReyaanBindlish/jarvis">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="wordmark" aria-hidden="true">Jarvis</div>
+    <div class="foot-bar">
+      <p class="made"><span class="mark" aria-hidden="true"></span>Made by Reyaan Bindlish</p>
+      <p class="credit">Notch and pet face from Music Notch by Ritesh Roshan (MIT). Design skills from tadashi.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
