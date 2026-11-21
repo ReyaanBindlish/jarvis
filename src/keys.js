@@ -5,6 +5,8 @@ const path = require("node:path");
 
 const DEFAULTS = {
   anthropic: "",
+  gemini: "", // when set, Gemini answers instead of Claude
+  gemini_model: "",
   groq: "",
   deepgram: "",
   elevenlabs: "",

@@ -206,7 +206,7 @@ ipcMain.handle("ask", async (_e, text) => {
     return out ? { ok: true, text: out } : { ok: false, error: "I have no answer for that." };
   } catch (e) {
     console.error("ask:", /** @type {any} */ (e)?.message ?? e);
-    return { ok: false, error: k.anthropic ? "Something went wrong. Try again." : NO_KEYS };
+    return { ok: false, error: k.anthropic || k.gemini ? "Something went wrong. Try again." : NO_KEYS };
   }
 });
 

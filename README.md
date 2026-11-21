@@ -64,3 +64,7 @@ MIT. See [LICENSE](LICENSE).
 ## Wake word
 
 Say "Hey Jarvis" and it opens with a pop and listens. You can also ask in one breath: "Hey Jarvis, what is the weather in Mumbai". While this is on, each burst of speech near the microphone is sent to your Groq (or Deepgram) account to check for the name. Turn it off from the right-click menu: Listen for Hey Jarvis.
+
+## Gemini instead of Claude
+
+Add a `gemini` field to `keys.json` with a Google AI Studio key and Jarvis asks Gemini instead of Claude. Web research uses Google Search grounding, which needs billing enabled on the Google project; on a free key Jarvis still answers, from what the model already knows, and says when live search is unavailable. `gemini_model` picks a different model.

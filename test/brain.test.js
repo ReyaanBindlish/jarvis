@@ -290,3 +290,69 @@ test('ask: mood with a key sends the weather facts to Claude', async () => {
   assert.match(body.messages[0].content, /31 degrees in Mumbai/);
   assert.match(body.messages[0].content, /India/);
 });
+
+test('askGemini: request shape, search tool, joins text parts', async () => {
+  const calls = [];
+  const fetch = async (url, init) => {
+    calls.push({ url, init });
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: '**India** won' }, { text: ' by 6 wickets [1].' }] } }] }),
+    };
+  };
+  const { askGemini } = require('../src/brain.js');
+  const out = await askGemini('who won the match', { gemini: 'test-key', name: 'Reyaan' }, { fetch });
+  assert.equal(out, 'India won by 6 wickets.');
+  assert.equal(calls[0].url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent');
+  assert.equal(calls[0].init.headers['x-goog-api-key'], 'test-key');
+  const body = JSON.parse(calls[0].init.body);
+  assert.deepEqual(body.tools, [{ google_search: {} }]);
+  assert.equal(body.contents[0].parts[0].text, 'who won the match');
+  assert.match(body.systemInstruction.parts[0].text, /Reyaan/);
+});
+
+test('ask: a gemini key routes general questions to Gemini, not Claude', async () => {
+  const urls = [];
+  const fetch = async (url) => {
+    urls.push(String(url));
+    return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Done.' }] } }] }) };
+  };
+  const { ask } = require('../src/brain.js');
+  assert.equal(await ask('who is the prime minister', { gemini: 'g', anthropic: 'a' }, { fetch }), 'Done.');
+  assert.equal(urls.length, 1);
+  assert.match(urls[0], /generativelanguage\.googleapis\.com/);
+});
+
+test('askGemini: 403 throws a clear error', async () => {
+  const fetch = async () => ({ ok: false, status: 403, json: async () => ({ error: { message: 'bad key' } }) });
+  const { askGemini } = require('../src/brain.js');
+  await assert.rejects(() => askGemini('hi', { gemini: 'x' }, { fetch }), /Gemini request failed \(403\): bad key/);
+});
+
+test('askGemini: no search quota (429) retries the same model without search', async () => {
+  const bodies = [];
+  const fetch = async (_url, init) => {
+    const body = JSON.parse(init.body);
+    bodies.push(body);
+    if (body.tools) return { ok: false, status: 429, json: async () => ({ error: { message: 'quota' } }) };
+    return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Hello.' }] } }] }) };
+  };
+  const { askGemini } = require('../src/brain.js');
+  assert.equal(await askGemini('hi', { gemini: 'x' }, { fetch }), 'Hello.');
+  assert.equal(bodies.length, 2);
+  assert.equal(bodies[1].tools, undefined);
+  assert.match(bodies[1].systemInstruction.parts[0].text, /cannot search the web/);
+});
+
+test('askGemini: a busy model (503) falls back to the next model', async () => {
+  const urls = [];
+  const fetch = async (url) => {
+    urls.push(String(url));
+    if (/gemini-3.5-flash-lite:/.test(url)) return { ok: false, status: 503, json: async () => ({}) };
+    return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Hi.' }] } }] }) };
+  };
+  const { askGemini } = require('../src/brain.js');
+  assert.equal(await askGemini('hi', { gemini: 'x' }, { fetch }), 'Hi.');
+  assert.match(urls[urls.length - 1], /gemini-3\.5-flash/);
+});

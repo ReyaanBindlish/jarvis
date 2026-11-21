@@ -254,6 +254,83 @@ async function askClaude(text, keys, opts) {
   return stripMarkdown(spoken) || "I'm afraid I have no answer for that.";
 }
 
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+const GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash';
+const NO_SEARCH_NOTE =
+  ' You cannot search the web right now. If the question needs information from today, ' +
+  'say in one short sentence that live search is unavailable, then give what you do know.';
+
+async function geminiCall(model, withSearch, text, k, opts) {
+  const fetch = getFetch(opts);
+  const res = await fetch(`${GEMINI_URL}/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': String(k.gemini).trim(), 'content-type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt(k) + (withSearch ? '' : NO_SEARCH_NOTE) }] },
+      contents: [{ role: 'user', parts: [{ text: String(text || '') }] }],
+      ...(withSearch ? { tools: [{ google_search: {} }] } : {}),
+      // a spoken answer should come back fast; only set on the built-in models, whose API accepts it
+      ...(model === DEFAULT_GEMINI_MODEL || model === GEMINI_FALLBACK_MODEL
+        ? { generationConfig: { thinkingConfig: { thinkingLevel: 'low' } } }
+        : {}),
+    }),
+    signal: (opts && opts.signal) || AbortSignal.timeout(withSearch ? 20000 : 15000),
+  });
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = (body && body.error && body.error.message) || '';
+    } catch (_) {
+      // body was not JSON; the status code is enough
+    }
+    const err = new Error(`Gemini request failed (${res.status})${detail ? ': ' + detail : ''}`);
+    err.status = res.status;
+    throw err;
+  }
+  const data = await res.json();
+  const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+  return parts
+    .filter((p) => p && typeof p.text === 'string' && !p.thought)
+    .map((p) => p.text)
+    .join('');
+}
+
+/**
+ * Gemini with Google Search grounding. Used instead of Claude when a gemini key is set.
+ * Search needs paid quota on the Google project: when Google refuses it (429) the same
+ * question is asked without search. A busy or retired model (503, 404) falls to the next one.
+ */
+async function askGemini(text, keys, opts) {
+  const k = keys || {};
+  if (!String(k.gemini || '').trim()) throw new Error('No Gemini key set');
+  const models = [...new Set([k.gemini_model || DEFAULT_GEMINI_MODEL, GEMINI_FALLBACK_MODEL])];
+  let last;
+  for (const model of models) {
+    for (const withSearch of [true, false]) {
+      try {
+        const spoken = await geminiCall(model, withSearch, text, k, opts);
+        return stripMarkdown(spoken.replace(/\s*\[\d+(?:,\s*\d+)*\]/g, '')) || "I'm afraid I have no answer for that.";
+      } catch (err) {
+        last = err;
+        if (err.status === 429 && withSearch) continue; // no search quota: try plain
+        const slow = err.name === 'TimeoutError' || err.name === 'AbortError';
+        if (err.status === 429 || err.status === 503 || err.status === 404 || slow) break; // next model
+        throw err;
+      }
+    }
+  }
+  throw last;
+}
+
+const hasBrain = (k) => Boolean(String(k.gemini || '').trim() || String(k.anthropic || '').trim());
+
+/** Everything that is not weather: Gemini when its key is set, otherwise Claude. */
+function think(text, k, opts) {
+  return String(k.gemini || '').trim() ? askGemini(text, k, opts) : askClaude(text, k, opts);
+}
+
 async function ask(text, keys, opts) {
   const k = keys || {};
   const home = k.city || DEFAULT_CITY;
@@ -267,23 +344,23 @@ async function ask(text, keys, opts) {
     try {
       feel = weatherFeel(await getWeather(home, opts));
     } catch (err) {
-      if (!String(k.anthropic || '').trim()) throw err;
+      if (!hasBrain(k)) throw err;
     }
-    if (!String(k.anthropic || '').trim()) return feel;
+    if (!hasBrain(k)) return feel;
 
     const prompt =
       `The user asked: "${text}". Give today's vibe in 2 to 3 short spoken sentences. ` +
       (feel ? `Weather facts for ${home}: ${feel} Open with how that weather feels. ` : '') +
       "Then search for India's biggest news today and say what the overall mood of the news is.";
     try {
-      return await askClaude(prompt, k, opts);
+      return await think(prompt, k, opts);
     } catch (err) {
       if (feel) return feel;
       throw err;
     }
   }
 
-  return askClaude(text, k, opts);
+  return think(text, k, opts);
 }
 
 module.exports = {
@@ -292,6 +369,7 @@ module.exports = {
   parseCity,
   getWeather,
   askClaude,
+  askGemini,
   ask,
   describeCode,
   stripMarkdown,
