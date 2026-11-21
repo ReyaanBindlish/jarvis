@@ -60,3 +60,7 @@ npm run dist
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Wake word
+
+Say "Hey Jarvis" and it opens with a pop and listens. You can also ask in one breath: "Hey Jarvis, what is the weather in Mumbai". While this is on, each burst of speech near the microphone is sent to your Groq (or Deepgram) account to check for the name. Turn it off from the right-click menu: Listen for Hey Jarvis.

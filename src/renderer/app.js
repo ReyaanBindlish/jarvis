@@ -1,5 +1,5 @@
 // Jarvis renderer: listen -> transcribe -> think -> speak -> idle.
-/* global Orb, Pet */
+/* global Orb, Pet, Wake */
 (() => {
   const api = /** @type {any} */ (window).jarvis;
   const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -70,6 +70,29 @@
     clearTimeout(collapseTimer);
     mic?.stop(false);
     stopVoice();
+  }
+
+  /** The little "pionk" when Jarvis wakes. */
+  function pop() {
+    try {
+      const ctx = audio();
+      const t = ctx.currentTime;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.22, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+      g.connect(ctx.destination);
+      const o = ctx.createOscillator();
+      o.type = "sine";
+      o.frequency.setValueAtTime(540, t);
+      o.frequency.exponentialRampToValueAtTime(1180, t + 0.07);
+      o.frequency.exponentialRampToValueAtTime(880, t + 0.2);
+      o.connect(g);
+      o.start(t);
+      o.stop(t + 0.28);
+    } catch {
+      // no audio device
+    }
   }
 
   function stopVoice() {
@@ -222,6 +245,7 @@
     cancel();
     const id = run;
     setOpen(true);
+    pop();
     heardEl.textContent = "";
     answerEl.textContent = "";
     setState("listening");
@@ -343,6 +367,113 @@
     rec.start();
   }
 
+  // ---------- wake word ----------
+  // A quiet always-on mic. Each short burst of speech is transcribed, and only acted on if it says "Jarvis".
+
+  /** @type {{ stop: () => void } | null} */
+  let wake = null;
+  let wakeBusy = false;
+  let wakeHold = 0;
+
+  async function startWake() {
+    if (wake || shot) return;
+    /** @type {MediaStream} */
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch {
+      return;
+    }
+    if (wake) return stream.getTracks().forEach((t) => t.stop());
+    const ctx = audio();
+    const src = ctx.createMediaStreamSource(stream);
+    const proc = ctx.createScriptProcessor(2048, 1, 1);
+    const mute = ctx.createGain();
+    mute.gain.value = 0;
+    src.connect(proc);
+    proc.connect(mute);
+    mute.connect(ctx.destination);
+    const blockMs = (2048 / ctx.sampleRate) * 1000;
+    /** @type {Float32Array[]} */
+    let pre = [];
+    /** @type {{ blocks: Float32Array[], voiced: number, quiet: number } | null} */
+    let seg = null;
+    let floor = 0.004;
+    let hot = 0;
+    proc.onaudioprocess = (e) => {
+      if (state !== "idle" || mic || wakeBusy || performance.now() < wakeHold) {
+        if (state !== "idle") wakeHold = performance.now() + 700; // do not hear our own last word
+        seg = null;
+        pre = [];
+        hot = 0;
+        return;
+      }
+      const d = new Float32Array(e.inputBuffer.getChannelData(0));
+      let sum = 0;
+      for (const v of d) sum += v * v;
+      const v = Math.sqrt(sum / d.length);
+      const threshold = Math.max(0.012, floor * 3);
+      if (!seg) {
+        pre.push(d);
+        if (pre.length > 14) pre.shift();
+        if (v > threshold) {
+          if (++hot >= 2) seg = { blocks: pre.slice(), voiced: 2, quiet: 0 };
+        } else {
+          hot = 0;
+          floor = floor * 0.97 + v * 0.03;
+        }
+        return;
+      }
+      seg.blocks.push(d);
+      if (v > threshold) {
+        seg.voiced++;
+        seg.quiet = 0;
+      } else seg.quiet++;
+      if (seg.quiet * blockMs < 800 && seg.blocks.length * blockMs < 12000) return;
+      const done = seg;
+      seg = null;
+      pre = [];
+      hot = 0;
+      if (done.voiced * blockMs >= 250) heard(done.blocks, ctx.sampleRate);
+    };
+    wake = {
+      stop() {
+        proc.onaudioprocess = null;
+        proc.disconnect();
+        src.disconnect();
+        stream.getTracks().forEach((t) => t.stop());
+      },
+    };
+  }
+
+  function stopWake() {
+    wake?.stop();
+    wake = null;
+  }
+
+  async function heard(/** @type {Float32Array[]} */ blocks, /** @type {number} */ rate) {
+    wakeBusy = true;
+    let r;
+    try {
+      r = await api.wake(Wake.toWav(blocks, rate));
+    } catch {
+      r = null;
+    }
+    wakeBusy = false;
+    if (r?.off) return stopWake();
+    if (!r?.ok || state !== "idle" || mic) return;
+    const hit = Wake.parseWake(r.text);
+    if (!hit) return;
+    Pet.mood("happy", 700);
+    if (!hit.query) return listen();
+    cancel();
+    setOpen(true);
+    pop();
+    respond(hit.query, run);
+  }
+
   /** Alt+J, the tray, or a click on the blob. */
   function trigger() {
     if (state === "listening" && mic) return mic.stop(true); // done talking
@@ -402,6 +533,7 @@
   api.on("collapse", () => {
     if (state === "idle" && !shot) setOpen(false);
   });
+  api.on("wake", (/** @type {boolean} */ on) => (on ? startWake() : stopWake()));
   api.on("cursor", (/** @type {{ x: number, y: number }} */ p) => Pet.look(p.x, p.y));
   try {
     speechSynthesis.getVoices(); // voices load lazily; ask early
@@ -411,7 +543,8 @@
 
   api.init().then((/** @type {{ name: string, shot: boolean }} */ init) => {
     shot = Boolean(init?.shot);
-    if (init?.name) answerEl.textContent = `Hello ${init.name}. Press Alt+J and talk, or type below.`;
+    if (init?.name) answerEl.textContent = `Hello ${init.name}. Say "Hey Jarvis", press Alt+J, or type below.`;
+    if (init?.wake) startWake();
   });
 
   // ---------- frame loop ----------

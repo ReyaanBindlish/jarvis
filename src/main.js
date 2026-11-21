@@ -122,29 +122,23 @@ function setKeys() {
 
 // ---------- menu and tray ----------
 
-/** A small blue orb, drawn in code so the app ships no image files. */
 function trayIcon() {
-  const n = 32;
-  const buf = Buffer.alloc(n * n * 4);
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      const d = Math.hypot(x - 15.5, y - 15.5) / 14;
-      const a = Math.max(0, Math.min(1, (1 - d) * 14));
-      const hi = Math.max(0, 1 - Math.hypot(x - 11, y - 10) / 12);
-      const i = (y * n + x) * 4;
-      buf[i] = Math.round(255 * a); // B
-      buf[i + 1] = Math.round((120 + 110 * hi) * a); // G
-      buf[i + 2] = Math.round((30 + 190 * hi) * a); // R
-      buf[i + 3] = Math.round(255 * a);
-    }
-  }
-  return nativeImage.createFromBitmap(buf, { width: n, height: n, scaleFactor: 2 });
+  return nativeImage.createFromPath(require("node:path").join(__dirname, "renderer", "tray.png"));
 }
 
 function appMenu() {
   return Menu.buildFromTemplate([
     { label: "Ask", accelerator: "Alt+J", click: ask },
     { label: "Set keys", click: setKeys },
+    {
+      label: "Listen for Hey Jarvis",
+      type: "checkbox",
+      checked: keys.load().wake !== "off",
+      click: (i) => {
+        keys.set("wake", i.checked ? "on" : "off");
+        send("wake", i.checked);
+      },
+    },
     {
       label: "Open at login",
       type: "checkbox",
@@ -171,7 +165,23 @@ ipcMain.on("hover", (_e, inside) => {
   win.setIgnoreMouseEvents(!inside, { forward: true });
 });
 
-ipcMain.handle("init", () => ({ name: keys.load().name, shot: tooling }));
+ipcMain.handle("init", () => {
+  const k = keys.load();
+  return { name: k.name, shot: tooling, wake: k.wake !== "off" };
+});
+
+// A short clip the wake listener thinks was speech. Returns what was said, so the page can look for "Jarvis".
+ipcMain.handle("wake", async (_e, audio) => {
+  const k = keys.load();
+  if (k.wake === "off" || (!k.groq && !k.deepgram)) return { ok: false, off: true };
+  try {
+    const buf = Buffer.from(audio);
+    if (buf.length < 2000 || buf.length > 2 * 1024 * 1024) return { ok: false };
+    return { ok: true, text: await voice.transcribe(buf, "audio/wav", k) };
+  } catch {
+    return { ok: false };
+  }
+});
 
 ipcMain.handle("transcribe", async (_e, audio, mime) => {
   try {

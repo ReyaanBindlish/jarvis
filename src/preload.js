@@ -1,7 +1,7 @@
 // Adapted from Music Notch by Ritesh Roshan (MIT).
 const { contextBridge, ipcRenderer } = require("electron");
 
-const CHANNELS = new Set(["ask", "open", "collapse", "cursor"]);
+const CHANNELS = new Set(["ask", "open", "collapse", "cursor", "wake"]);
 
 contextBridge.exposeInMainWorld("jarvis", {
   init: () => ipcRenderer.invoke("init"),
@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("jarvis", {
     ipcRenderer.invoke("transcribe", audio, mime),
   ask: (/** @type {string} */ text) => ipcRenderer.invoke("ask", text),
   speak: (/** @type {string} */ text) => ipcRenderer.invoke("speak", text),
+  wake: (/** @type {ArrayBuffer} */ audio) => ipcRenderer.invoke("wake", audio),
   hover: (/** @type {boolean} */ inside) => ipcRenderer.send("hover", inside),
   menu: () => ipcRenderer.send("menu"),
   on: (/** @type {string} */ channel, /** @type {(v: any) => void} */ fn) => {

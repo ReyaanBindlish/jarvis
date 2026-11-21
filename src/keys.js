@@ -12,6 +12,7 @@ const DEFAULTS = {
   model: "claude-fable-5-2",
   city: "New Delhi",
   name: "",
+  wake: "on", // "off" stops listening for "Hey Jarvis"
 };
 
 function file() {
@@ -47,4 +48,17 @@ function load() {
   return keys;
 }
 
-module.exports = { load, ensure, file, DEFAULTS };
+/** Change one field, keeping everything else in the file as it is. */
+function set(/** @type {string} */ key, /** @type {string} */ value) {
+  const f = ensure();
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(f, "utf8").replace(/^\uFEFF/, ""));
+  } catch {
+    return; // never overwrite a file we could not read
+  }
+  raw[key] = value;
+  fs.writeFileSync(f, JSON.stringify(raw, null, 2) + "\n");
+}
+
+module.exports = { load, ensure, file, set, DEFAULTS };

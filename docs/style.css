@@ -255,3 +255,5 @@ code { font-family: var(--mono); font-size: 0.88em; }
   *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; }
   .js .reveal { opacity: 1; transform: none; }
 }
+
+.logo-icon { width: 26px; height: 26px; border-radius: 7px; display: block; }

@@ -206,7 +206,7 @@ test('askClaude: request shape, joins text blocks, strips markdown', async () =>
   assert.strictEqual(body.model, 'claude-fable-5-2');
   assert.strictEqual(body.max_tokens, 1024);
   assert.deepStrictEqual(body.messages, [{ role: 'user', content: 'Who won the match?' }]);
-  assert.deepStrictEqual(body.tools, [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }]);
+  assert.deepStrictEqual(body.tools, [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }]);
   assert.match(body.system, /Jarvis/);
   assert.match(body.system, /Reyaan/);
 });

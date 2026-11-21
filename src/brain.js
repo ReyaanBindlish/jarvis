@@ -224,7 +224,7 @@ async function askClaude(text, keys, opts) {
         max_tokens: 1024,
         system: systemPrompt(k),
         messages,
-        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
       }),
       signal: opts && opts.signal,
     });

@@ -28,7 +28,8 @@
     "win": {
       "target": "zip",
       "artifactName": "Jarvis-win.zip",
-      "signAndEditExecutable": false
+      "icon": "build/icon.png",
+      "signExecutable": false
     }
   }
 }
